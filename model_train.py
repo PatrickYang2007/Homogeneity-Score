@@ -5,8 +5,10 @@ from scipy.stats import pearsonr
 
 class Trainer:
     def __init__(self, model, train_loader, val_loader, num_epochs, lr=1e-3,
-                 weight_decay=1e-4, grad_clip=1.0, patience=10, early_stopping=True):
+                 weight_decay=1e-4, grad_clip=1.0, patience=10, early_stopping=True,
+                 checkpoint_path="best_model.pt"):
         self.model = model
+        self.checkpoint_path = checkpoint_path
         self.train_loader = train_loader
         self.val_loader = val_loader
         self.num_epochs = num_epochs
@@ -78,7 +80,7 @@ class Trainer:
             if corr > self.best_val_corr:
                 self.best_val_corr = corr
                 epochs_no_improve = 0
-                torch.save(self.model.state_dict(), "best_model.pt")
+                torch.save(self.model.state_dict(), self.checkpoint_path)
             else:
                 epochs_no_improve += 1
                 if self.early_stopping and epochs_no_improve >= self.patience:

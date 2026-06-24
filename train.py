@@ -44,6 +44,10 @@ def main():
     train_loader = make_dataloader(f"{DATA_DIR}/train{suffix}.parquet", batch_size = BATCH_SIZE)
     val_loader = make_dataloader(f"{DATA_DIR}/val{suffix}.parquet", batch_size = BATCH_SIZE, shuffle = False)
 
+    # Each experiment saves to its own checkpoint so runs don't overwrite each
+    # other, e.g. best_model_w256.pt vs best_model_agg256.pt.
+    checkpoint_path = f"best_model{suffix}.pt"
+
     # Summed-bin labels are unbounded, so drop the final sigmoid (bounded=False).
     model = HomogeneityScoreModel(dropout = DROPOUT, ker_size = KER_SIZE,
                                   num_filters = NUM_FILTERS, pool = POOL,
@@ -51,12 +55,12 @@ def main():
 
     trainer = Trainer(model, train_loader, val_loader, num_epochs=EPOCHS, lr=LR,
                       weight_decay=WEIGHT_DECAY, grad_clip=GRAD_CLIP, patience=PATIENCE,
-                      early_stopping=EARLY_STOPPING)
+                      early_stopping=EARLY_STOPPING, checkpoint_path=checkpoint_path)
     train_losses, val_losses = trainer.fit()
 
     plot_loss_curves(train_losses, val_losses, out_dir=OUT_DIR)
     print(f"best val pearson: {trainer.best_val_corr:.4f}  (val loss at that epoch tracked separately)")
-    print(f"model saved to best_model.pt")
+    print(f"model saved to {checkpoint_path}")
 
 
 if __name__ == "__main__":
