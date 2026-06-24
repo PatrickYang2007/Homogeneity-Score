@@ -251,6 +251,44 @@ def evaluate_split(model, split, parquet, device, threshold, bounded, out_dir):
     return m
 
 
+def write_summary(results, out_dir, args, suffix):
+    """Write a small human-readable summary.txt alongside the plots."""
+    lines = []
+    lines.append("=" * 60)
+    lines.append("  HOMOGENEITY SCORE - EVALUATION SUMMARY")
+    lines.append("=" * 60)
+    lines.append(f"weights      : {args.weights}")
+    lines.append(f"data         : data/{{split}}{suffix}.parquet")
+    lines.append(f"mode         : {'summed-bin (linear)' if args.aggregate else 'per-region (sigmoid)'}")
+    lines.append(f"window       : {args.window}")
+    lines.append("")
+    header = f"{'metric':<14}" + "".join(f"{s:>12}" for s in results)
+    lines.append(header)
+    lines.append("-" * len(header))
+    keys = ["pearson", "spearman", "r2", "rmse", "mae", "auroc", "auprc"]
+    label = {"pearson": "Pearson r", "spearman": "Spearman rho", "r2": "R^2",
+             "rmse": "RMSE", "mae": "MAE", "auroc": "AUROC", "auprc": "AUPRC"}
+    for k in keys:
+        if any(k in results[s] for s in results):
+            row = f"{label[k]:<14}"
+            for s in results:
+                v = results[s].get(k)
+                row += f"{v:>12.4f}" if v is not None else f"{'-':>12}"
+            lines.append(row)
+    lines.append("")
+    lines.append("Plots in this folder (per split):")
+    lines.append("  pred_vs_true  - predicted vs observed (density); slope < 1 = mean regression")
+    lines.append("  calibration   - binned mean pred vs observed; flat = compressed range")
+    lines.append("  residuals     - error vs observed; structure = systematic bias")
+    lines.append("  distributions - observed vs predicted spread")
+    lines.append("  per_chrom     - Pearson per held-out chromosome (consistency)")
+    lines.append("  roc_pr        - ROC / precision-recall at score threshold (per-region only)")
+    text = "\n".join(lines) + "\n"
+    with open(f"{out_dir}/summary.txt", "w") as f:
+        f.write(text)
+    print("\n" + text)
+
+
 def main():
     p = argparse.ArgumentParser(description="Evaluation report for a trained model")
     p.add_argument("--weights", required=True, help="model checkpoint (.pt)")
@@ -291,7 +329,8 @@ def main():
 
     with open(f"{out_dir}/metrics.json", "w") as f:
         json.dump(results, f, indent=2)
-    print(f"\nWrote plots + metrics.json to {out_dir}/")
+    write_summary(results, out_dir, args, suffix)
+    print(f"Wrote plots + metrics.json + summary.txt to {out_dir}/")
 
 
 if __name__ == "__main__":
