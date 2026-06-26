@@ -48,6 +48,27 @@ def extract_bin(chrom_seq, bin_start, window):
     return "N" * left_pad + core + "N" * right_pad
 
 
+def aggregate_scores(df, window):
+    """Assign each region to a fixed-grid bin by its center and sum scores per bin.
+
+    Pure function over a DataFrame with chrom/start/end/score columns. Returns a
+    new DataFrame with one row per (chrom, bin): chrom, bin, score (the SUM),
+    n_regions (count), and the bin's start/end coordinates. No mutation of `df`.
+    """
+    # Stamp each region with its bin id from its own center (one vectorized pass),
+    # then sum scores per bin. No sorting or neighbor lookups needed.
+    center = (df["start"] + df["end"]) // 2
+    binned = df.assign(bin=(center // window).astype(int))
+    agg = (
+        binned.groupby(["chrom", "bin"])
+        .agg(score=("score", "sum"), n_regions=("score", "size"))
+        .reset_index()
+    )
+    agg["start"] = (agg["bin"] * window).astype(int)
+    agg["end"] = agg["start"] + window
+    return agg
+
+
 def build_bins(bedgraph_path, genome_path, window):
     print("Loading bedgraph...")
     df = pd.read_csv(
@@ -62,17 +83,7 @@ def build_bins(bedgraph_path, genome_path, window):
     df["end"] = df["end"].round().astype(int)
     print(f"  {len(df):,} regions loaded")
 
-    # Stamp each region with its bin id from its own center (one vectorized pass),
-    # then sum scores per bin. No sorting or neighbor lookups needed.
-    center = (df["start"] + df["end"]) // 2
-    df["bin"] = (center // window).astype(int)
-    agg = (
-        df.groupby(["chrom", "bin"])
-        .agg(score=("score", "sum"), n_regions=("score", "size"))
-        .reset_index()
-    )
-    agg["start"] = (agg["bin"] * window).astype(int)
-    agg["end"] = agg["start"] + window
+    agg = aggregate_scores(df, window)
     print(f"  {len(agg):,} bins with >=1 region "
           f"(mean {agg['n_regions'].mean():.1f} regions/bin, "
           f"summed score range {agg['score'].min():.2f}-{agg['score'].max():.2f})")

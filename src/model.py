@@ -89,6 +89,11 @@ class HomogeneityScoreModel(nn.Module):
         # a linear (unbounded) output instead.
         self.bounded = bounded
         self.num_blocks = num_blocks
+        # Each block with pool>1 divides the sequence length by `pool`, so the
+        # input must be at least pool**num_blocks long or a block reduces the
+        # length to zero. Stored so forward() can fail fast with a clear message
+        # instead of producing silent garbage.
+        self._pool_factor = pool if (pool and pool > 1) else 1
 
         self._blocks = []
         dim = in_channels
@@ -105,6 +110,13 @@ class HomogeneityScoreModel(nn.Module):
         self.fc = nn.Linear(dim, 1)
 
     def forward(self, x):
+        if self._pool_factor > 1:
+            min_len = self._pool_factor ** self.num_blocks
+            if x.shape[-1] < min_len:
+                raise ValueError(
+                    f"input length {x.shape[-1]} too short for {self.num_blocks} "
+                    f"blocks with pool={self._pool_factor}; need length >= {min_len}"
+                )
         for block in self._blocks:
             x = block(x)
         x = self.pool(x)
