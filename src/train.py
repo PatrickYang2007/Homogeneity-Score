@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import torch
 
 from model import HeterogeneityScoreModel, make_dataloader
-from model_train import Trainer
+from trainer import Trainer
 from config import WINDOW as CFG_WINDOW, AGGREGATE as CFG_AGGREGATE
 
 

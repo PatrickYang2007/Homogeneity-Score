@@ -19,7 +19,7 @@ prepare_data.py ──► MACS2 peak filtering ──► chrom split ──► d
 widen_windows.py ──► data/{train,val,test}_w256.parquet
       │
       ▼
-train.py ──► model.py (CNN) + model_train.py (Trainer) ──► best_model.pt
+train.py ──► model.py (CNN) + trainer.py (Trainer) ──► best_model.pt
       │
       ▼
 eval_report.py / predict.py
@@ -159,7 +159,7 @@ data/     genome FASTA, bedgraph, and parquet splits (git-ignored)
 | `src/widen_windows.py` | re-extract wider context windows from existing splits |
 | `src/aggregate_bins.py` | summed-bin experiment: tile genome, sum scores per bin |
 | `src/model.py` | CNN, attention pooling, `GenomicDataset`, dataloader |
-| `src/model_train.py` | `Trainer` (training/validation loops, checkpointing) |
+| `src/trainer.py` | `Trainer` (training/validation loops, checkpointing) |
 | `src/train.py` | training entry point, hyperparameters, loss-curve plot |
 | `src/eval_report.py` | full eval report: metrics + diagnostic plots + summary |
 | `src/predict.py` | run inference on new sequences |
