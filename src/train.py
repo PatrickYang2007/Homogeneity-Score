@@ -1,12 +1,27 @@
 import os
 import math
 import argparse
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 import torch
-from model import HeterogeneityScoreModel
+
+from model import HeterogeneityScoreModel, make_dataloader
 from model_train import Trainer
-from model import make_dataloader
-from evaluate import plot_loss_curves
 from config import WINDOW as CFG_WINDOW, AGGREGATE as CFG_AGGREGATE
+
+
+def plot_loss_curves(train_losses, val_losses, out_dir, filename="loss_curves.png"):
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.plot(train_losses, label="train")
+    ax.plot(val_losses, label="val")
+    ax.set_xlabel("epoch")
+    ax.set_ylabel("loss")
+    ax.legend()
+    fig.tight_layout()
+    fig.savefig(f"{out_dir}/{filename}", dpi=150)
+    plt.close(fig)
 
 DATA_DIR = "data"
 OUT_DIR = "Models"   # checkpoints and loss curve are written here

@@ -7,7 +7,7 @@ script keeps the exact same rows, scores, and chromosome split, but replaces the
 re-extracted from the genome FASTA. It does NOT re-run MACS2 / peak filtering,
 so it's cheap to sweep different window sizes.
 
-Output: data/{split}_w{WINDOW}.parquet, which train.py / evaluate.py can point at.
+Output: data/{split}_w{WINDOW}.parquet, which train.py / eval_report.py can point at.
 """
 import os
 import pandas as pd

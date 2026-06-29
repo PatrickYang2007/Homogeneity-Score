@@ -22,7 +22,7 @@ widen_windows.py ──► data/{train,val,test}_w256.parquet
 train.py ──► model.py (CNN) + model_train.py (Trainer) ──► best_model.pt
       │
       ▼
-evaluate.py / predict.py
+eval_report.py / predict.py
 ```
 
 ## Data representation
@@ -133,11 +133,11 @@ sbatch slurm/train.sbatch            # -> Models/best_model_{w,agg}{WINDOW}.pt +
 
 ### 3. Evaluate / predict
 ```bash
-python -c "import sys; sys.path.insert(0, 'src'); from evaluate import evaluate; \
-  evaluate('Models/best_model_w256_perRegion.pt', 'data/test_w256.parquet', 'data/val_w256.parquet')"
+# full eval report (metrics + diagnostic plots + summary.txt) -> Models/eval/<tag>/
+sbatch slurm/eval.sbatch --weights Models/best_model_w2048.pt --window 2048
 
-python src/predict.py data/test_w256.parquet \
-  --weights Models/best_model_w256_perRegion.pt --output preds.tsv
+python src/predict.py data/test_w2048.parquet \
+  --weights Models/best_model_w2048.pt --output preds.tsv
 # add --aggregate when the weights came from a summed-bin model
 ```
 
@@ -160,8 +160,7 @@ data/     genome FASTA, bedgraph, and parquet splits (git-ignored)
 | `src/aggregate_bins.py` | summed-bin experiment: tile genome, sum scores per bin |
 | `src/model.py` | CNN, attention pooling, `GenomicDataset`, dataloader |
 | `src/model_train.py` | `Trainer` (training/validation loops, checkpointing) |
-| `src/train.py` | training entry point and hyperparameters |
-| `src/evaluate.py` | metrics (Pearson/Spearman) and scatter/loss plots |
+| `src/train.py` | training entry point, hyperparameters, loss-curve plot |
 | `src/eval_report.py` | full eval report: metrics + diagnostic plots + summary |
 | `src/predict.py` | run inference on new sequences |
 | `slurm/*.sbatch` | Slurm submission scripts |
